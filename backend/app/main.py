@@ -6,4 +6,4 @@ app = FastAPI(title="My API")
 @app.get("/health")
 def health():
     result = db_func()
-    return {"resultz": result}
+    return {"result": result}
