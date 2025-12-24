@@ -78,15 +78,14 @@ def me(token: RequestToken = Depends(auth.access_token_required)):
             "id": user.id,
             "username": user.username,
             "email": user.email,
-            # "favorite_quotes": [
-            #     {
-            #         "id": q.id,
-            #         "text": q.text,
-            #         "author": q.author,
-            #         "thinking": q.thinking
-            #     }
-            #     for q in user.favorite_quotes
-            # ]
+            "exercises": [
+                {
+                    "id": e.id,
+                    "name": e.name,
+                    "group": e.group
+                }
+                for e in user.exercises
+            ]
         }
 
 
