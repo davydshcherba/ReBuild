@@ -1,6 +1,7 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base,Mapped, mapped_column
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import Session
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -15,10 +16,12 @@ if not DATABASE_URL:
 engine = create_engine(DATABASE_URL)
 Base = declarative_base()
 
-class User(Base):
-    __tablename__ = "users"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    username: Mapped[str] = mapped_column(unique=True, nullable=False)
-    email: Mapped[str] = mapped_column(unique=True, nullable=False)
-    hashed_password: Mapped[str] = mapped_column(nullable=False)
+
+def get_db():
+    db = Session(engine)
+    try:
+        yield db
+    finally:
+        db.close()
+
 
