@@ -6,47 +6,48 @@ RUN npm install
 COPY frontend/. .
 RUN npm run build
 
-# Етап 2: Підготовка бекенду (залежності + код)
+# Етап 2: Підготовка бекенду
 FROM python:3.12-slim AS backend-build
 WORKDIR /app
 
-# Встановлюємо залежності для компіляції (psycopg2 тощо)
 RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 
-# Встановлюємо uv
 RUN pip install --no-cache-dir uv
 
-# Копіюємо тільки файли залежностей і синхронізуємо
 COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --frozen
 
-# Копіюємо код бекенду
 COPY backend/app ./app
 
-# Етап 3: Фінальний образ — на базі python:3.12-slim
+# Етап 3: Фінальний образ
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Встановлюємо nginx
+# Встановлюємо nginx та runtime залежності
 RUN apt-get update && \
     apt-get install -y nginx libpq5 && \
     rm -rf /var/lib/apt/lists/*
 
-# Копіюємо бекенд з готовим .venv
+# Спочатку очищаємо всі дефолтні конфіги
+RUN rm -rf /etc/nginx/conf.d/* && \
+    rm -rf /etc/nginx/sites-enabled/* && \
+    rm -rf /etc/nginx/sites-available/*
+
+# Копіюємо бекенд з .venv
 COPY --from=backend-build /app /app
 
-# Копіюємо зібраний фронтенд в nginx html
+# Копіюємо фронтенд
 COPY --from=frontend-build /frontend/dist /usr/share/nginx/html
 
-# Копіюємо nginx конфіг (має бути в корені або backend/, залежно від розташування Dockerfile)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Копіюємо наш повний nginx.conf як головний
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Додаємо .venv в PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Експонуємо порт 80
+# Експонуємо порт
 EXPOSE 80
 
-# Запускаємо nginx у foreground + uvicorn
-CMD sh -c "nginx -g 'daemon off;' & uvicorn app.main:app --host 0.0.0.0 --port 8000"
+# Запускаємо nginx (foreground) + uvicorn
+CMD ["sh", "-c", "nginx -g 'daemon off;' & uvicorn app.main:app --host 0.0.0.0 --port 8000"]
