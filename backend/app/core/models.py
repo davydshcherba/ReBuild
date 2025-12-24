@@ -10,7 +10,7 @@ class ExerciseModel(Base):
     group: Mapped[str] = mapped_column(nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    user: Mapped["User"] = relationship(back_populates="exercises")
+    user: Mapped["UserModel"] = relationship(back_populates="exercises")
 
 
 class UserModel(Base):
@@ -20,7 +20,7 @@ class UserModel(Base):
     email: Mapped[str] = mapped_column(unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(nullable=False)
 
-    exercises: Mapped[list["Exercise"]] = relationship(
+    exercises: Mapped[list["ExerciseModel"]] = relationship(
         back_populates="user", 
         cascade="all, delete-orphan"
     )

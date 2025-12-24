@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from authx import AuthX, AuthXConfig
 from .core.database import Base, engine, get_db
-from .core.models import User
+from .core.models import UserModel , ExerciseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -20,25 +20,25 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @app.post("/login")
 def login(username: str, password: str, db: Session = Depends(get_db)):
-    stmt = select(User).where(User.username == username)
+    stmt = select(UserModel).where(UserModel.username == username)
     user = db.scalar(stmt)
 
     if not user:
         raise HTTPException(status_code=401, detail={"message": "Invalid credentials"})
-
+    
     password_bytes = password.encode("utf-8")[:72]
     is_correct_password = pwd_context.verify(password_bytes, user.hashed_password)
 
     if is_correct_password:
         token = auth.create_access_token(uid=username)
         return {"access_token": token}
-
+    
     raise HTTPException(status_code=401, detail={"message": "Invalid credentials"})
 
 
 @app.post("/register")
 def register(username: str, email: str, password: str, db: Session = Depends(get_db)):
-    stmt = select(User).where(User.username == username)
+    stmt = select(UserModel).where(UserModel.username == username)
     existing_user = db.scalar(stmt)
 
     if existing_user:
@@ -49,7 +49,14 @@ def register(username: str, email: str, password: str, db: Session = Depends(get
     password_bytes = password.encode("utf-8")[:72]
     hashed_password = pwd_context.hash(password_bytes)
 
-    new_user = User(username=username, hashed_password=hashed_password, email=email)
+    new_user = UserModel(username=username, hashed_password=hashed_password, email=email)
     db.add(new_user)
     db.commit()
     return {"message": "User registered successfully"}
+
+@app.post("/exercises")
+def create_exercise(name: str, group: str, user_id: int, db: Session = Depends(get_db)):
+    new_exercise = ExerciseModel(name=name, group=group, user_id=user_id)
+    db.add(new_exercise)
+    db.commit()
+    return {"message": "Exercise created successfully"}
