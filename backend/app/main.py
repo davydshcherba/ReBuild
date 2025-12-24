@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, Response
 from authx import AuthX, AuthXConfig, RequestToken
 from .core.database import Base, engine, get_db
 from .core.models import UserModel , ExerciseModel
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -23,6 +24,17 @@ app = FastAPI(title="My API")
 Base.metadata.create_all(engine)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+origins = [
+    "*",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/login")
 def login(response: Response, username: str, password: str, db: Session = Depends(get_db)):
