@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "authx>=1.4.3",
     "fastapi[standard]>=0.127.0",
     "psycopg2>=2.9.11",
     "python-dotenv>=1.2.1",
