@@ -1,7 +1,11 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@localhost:5434/app_db
