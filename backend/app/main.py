@@ -25,7 +25,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @app.post("/login")
-def login(response: Response,username: str, password: str, db: Session = Depends(get_db)):
+def login(response: Response, username: str, password: str, db: Session = Depends(get_db)):
     stmt = select(UserModel).where(UserModel.username == username)
     user = db.scalar(stmt)
 
@@ -36,7 +36,7 @@ def login(response: Response,username: str, password: str, db: Session = Depends
     is_correct_password = pwd_context.verify(password_bytes, user.hashed_password)
 
     if is_correct_password:
-        token = auth.create_access_token(uid=username)
+        token = auth.create_access_token(uid=str(user.id))  
         auth.set_access_cookies(
             response=response,
             token=token
@@ -44,7 +44,6 @@ def login(response: Response,username: str, password: str, db: Session = Depends
         return {"access_token": token}
     
     raise HTTPException(status_code=401, detail={"message": "Invalid credentials"})
-
 
 @app.post("/register")
 def register(username: str, email: str, password: str, db: Session = Depends(get_db)):
@@ -68,7 +67,7 @@ def register(username: str, email: str, password: str, db: Session = Depends(get
 def me(token: RequestToken = Depends(auth.access_token_required)):
     for db in get_db():
         user = db.execute(
-            select(UserModel).where(UserModel.username == token.sub)
+            select(UserModel).where(UserModel.id == int(token.sub))  # Convert to int
         ).scalars().first()
 
         if user is None:
@@ -90,8 +89,8 @@ def me(token: RequestToken = Depends(auth.access_token_required)):
 
 
 @app.post("/exercises")
-def create_exercise(name: str, group: str, user_id: int, db: Session = Depends(get_db)):
-    new_exercise = ExerciseModel(name=name, group=group, user_id=user_id)
+def create_exercise(name: str, group: str, db: Session = Depends(get_db), token: RequestToken = Depends(auth.access_token_required)):
+    new_exercise = ExerciseModel(name=name, group=group, user_id=int(token.sub))
     db.add(new_exercise)
     db.commit()
     return {"message": "Exercise created successfully"}
