@@ -1,26 +1,27 @@
+version: '3.9'
+
 services:
-  backend:
+  app:
     build:
       context: .
-      dockerfile: backend/Dockerfile
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend/app:/app/app
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5434/app_db
-  frontend:
-    build:
-      context: ./frontend 
       dockerfile: Dockerfile  
     ports:
-      - "5173:5173" 
-    volumes:
-      - ./frontend:/app  
-      - /app/node_modules  
+      - "8000:8000" 
     environment:
-      - VITE_BACKEND_URL=http://backend:3000 
-      - CHOKIDAR_USEPOLLING=true  
-    command: npm run dev -- --host  
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/app_db 
     depends_on:
-      - backend  
+      - db
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

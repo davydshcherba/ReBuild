@@ -10,3 +10,5 @@ docker compose up --build
 cd backend
 uvicorn app.main:app --reload 
 ```
+
+fetch(import.meta.env.VITE_BACKEND_URL + '/some-endpoint')
