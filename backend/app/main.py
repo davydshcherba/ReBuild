@@ -33,3 +33,16 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
         return {"access_token": token}
     
     raise HTTPException(status_code=401, detail={"message": "Invalid credentials"})
+
+@app.post("/register")
+def register(username: str, email: str, password: str, db: Session = Depends(get_db)):
+    stmt = select(User).where(User.username == username)
+    existing_user = db.scalar(stmt)
+    
+    if existing_user:
+        raise HTTPException(status_code=400, detail={"message": "Username already exists"})
+    
+    new_user = User(username=username, hashed_password=password, email=email)
+    db.add(new_user)
+    db.commit()
+    return {"message": "User registered successfully"}
