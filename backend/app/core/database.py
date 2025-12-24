@@ -13,10 +13,3 @@ if not DATABASE_URL:
 
 engine = create_engine(DATABASE_URL)
 
-def db_func():
-    try:
-        with engine.connect() as conn:
-            result = conn.execute("SELECT 1")
-            return "Database connection successful!"
-    except Exception as e:
-        return f"Database connection failed: {str(e)}"
