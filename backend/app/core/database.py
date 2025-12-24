@@ -12,3 +12,11 @@ if not DATABASE_URL:
     DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 engine = create_engine(DATABASE_URL)
+
+def db_func():
+    try:
+        with engine.connect() as conn:
+            result = conn.execute("SELECT 1")
+            return "Database connection successful!"
+    except Exception as e:
+        return f"Database connection failed: {str(e)}"
