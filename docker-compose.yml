@@ -9,3 +9,18 @@ services:
       - ./backend/app:/app/app
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5434/app_db
+  frontend:
+    build:
+      context: ./frontend 
+      dockerfile: Dockerfile  
+    ports:
+      - "5173:5173" 
+    volumes:
+      - ./frontend:/app  
+      - /app/node_modules  
+    environment:
+      - VITE_BACKEND_URL=http://backend:3000 
+      - CHOKIDAR_USEPOLLING=true  
+    command: npm run dev -- --host  
+    depends_on:
+      - backend  
