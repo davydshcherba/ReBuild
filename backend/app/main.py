@@ -25,7 +25,7 @@ Base.metadata.create_all(engine)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 origins = [
-    "https://re-build-git-main-davydshcherbas-projects.vercel.app",
+    "https://re-build-noeb9pp9v-davydshcherbas-projects.vercel.app",
 ]
 
 app.add_middleware(
