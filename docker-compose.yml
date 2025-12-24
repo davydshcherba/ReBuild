@@ -8,4 +8,4 @@ services:
     volumes:
       - ./backend/app:/app/app
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@localhost:5434/app_db
+      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5434/app_db
