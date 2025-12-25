@@ -25,16 +25,12 @@ app = FastAPI(title="My API")
 Base.metadata.create_all(engine)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://re-build-noeb9pp9v-davydshcherbas-projects.vercel.app",
-]
+
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
