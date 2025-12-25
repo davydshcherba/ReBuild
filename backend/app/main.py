@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from pydantic import BaseModel
 import os
 
 config = AuthXConfig(
@@ -25,6 +26,8 @@ Base.metadata.create_all(engine)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
     "https://re-build-noeb9pp9v-davydshcherbas-projects.vercel.app",
 ]
 
@@ -36,15 +39,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class ExerciseRequest(BaseModel):
+    name: str
+    group: str
+
 @app.post("/login")
-def login(response: Response, username: str, password: str, db: Session = Depends(get_db)):
-    stmt = select(UserModel).where(UserModel.username == username)
+def login(response: Response, request: LoginRequest, db: Session = Depends(get_db)):
+    stmt = select(UserModel).where(UserModel.username == request.username)
     user = db.scalar(stmt)
 
     if not user:
         raise HTTPException(status_code=401, detail={"message": "Invalid credentials"})
     
-    password_bytes = password.encode("utf-8")[:72]
+    password_bytes = request.password.encode("utf-8")[:72]
     is_correct_password = pwd_context.verify(password_bytes, user.hashed_password)
 
     if is_correct_password:
@@ -58,8 +74,8 @@ def login(response: Response, username: str, password: str, db: Session = Depend
     raise HTTPException(status_code=401, detail={"message": "Invalid credentials"})
 
 @app.post("/register")
-def register(username: str, email: str, password: str, db: Session = Depends(get_db)):
-    stmt = select(UserModel).where(UserModel.username == username)
+def register(request: RegisterRequest, db: Session = Depends(get_db)):
+    stmt = select(UserModel).where(UserModel.username == request.username)
     existing_user = db.scalar(stmt)
 
     if existing_user:
@@ -67,10 +83,10 @@ def register(username: str, email: str, password: str, db: Session = Depends(get
             status_code=400, detail={"message": "Username already exists"}
         )
 
-    password_bytes = password.encode("utf-8")[:72]
+    password_bytes = request.password.encode("utf-8")[:72]
     hashed_password = pwd_context.hash(password_bytes)
 
-    new_user = UserModel(username=username, hashed_password=hashed_password, email=email)
+    new_user = UserModel(username=request.username, hashed_password=hashed_password, email=request.email)
     db.add(new_user)
     db.commit()
     return {"message": "User registered successfully"}
@@ -79,7 +95,7 @@ def register(username: str, email: str, password: str, db: Session = Depends(get
 def me(token: RequestToken = Depends(auth.access_token_required)):
     for db in get_db():
         user = db.execute(
-            select(UserModel).where(UserModel.id == int(token.sub))  # Convert to int
+            select(UserModel).where(UserModel.id == int(token.sub))
         ).scalars().first()
 
         if user is None:
@@ -99,10 +115,9 @@ def me(token: RequestToken = Depends(auth.access_token_required)):
             ]
         }
 
-
 @app.post("/exercises")
-def create_exercise(name: str, group: str, db: Session = Depends(get_db), token: RequestToken = Depends(auth.access_token_required)):
-    new_exercise = ExerciseModel(name=name, group=group, user_id=int(token.sub))
+def create_exercise(request: ExerciseRequest, db: Session = Depends(get_db), token: RequestToken = Depends(auth.access_token_required)):
+    new_exercise = ExerciseModel(name=request.name, group=request.group, user_id=int(token.sub))
     db.add(new_exercise)
     db.commit()
     return {"message": "Exercise created successfully"}

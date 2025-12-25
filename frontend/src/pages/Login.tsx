@@ -18,8 +18,9 @@ export default function Login() {
     try {
       await api.login(username, password);
       navigate('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err?.message || 'An error occurred during login');
     } finally {
       setLoading(false);
     }
@@ -64,4 +65,3 @@ export default function Login() {
     </div>
   );
 }
-
