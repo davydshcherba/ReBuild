@@ -15,8 +15,8 @@ config = AuthXConfig(
     JWT_TOKEN_LOCATION=["cookies"],
     JWT_ACCESS_TOKEN_EXPIRES=36000000,
     JWT_ACCESS_COOKIE_NAME="access_token_cookie",
-    JWT_COOKIE_SECURE=False, 
-    JWT_COOKIE_SAMESITE="lax",
+    JWT_COOKIE_SECURE=True,  # Change to True for HTTPS in production
+    JWT_COOKIE_SAMESITE="none",  # Change to "none" for cross-origin
     JWT_COOKIE_CSRF_PROTECT=False
 )
 
@@ -30,7 +30,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
