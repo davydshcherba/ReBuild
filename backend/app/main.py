@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from datetime import date
 import os
 
 config = AuthXConfig(
@@ -15,8 +16,8 @@ config = AuthXConfig(
     JWT_TOKEN_LOCATION=["cookies"],
     JWT_ACCESS_TOKEN_EXPIRES=36000000,
     JWT_ACCESS_COOKIE_NAME="access_token_cookie",
-    JWT_COOKIE_SECURE=True,  # Change to True for HTTPS in production
-    JWT_COOKIE_SAMESITE="none",  # Change to "none" for cross-origin
+    JWT_COOKIE_SECURE=False,  # False for local development (HTTP), True for production (HTTPS)
+    JWT_COOKIE_SAMESITE="lax",  # "lax" for local development, "none" for cross-origin in production (requires Secure=True)
     JWT_COOKIE_CSRF_PROTECT=False
 )
 
@@ -27,9 +28,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 
+# CORS configuration - must specify exact origins when using credentials
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",  # Vite default port (fallback)
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,6 +54,7 @@ class RegisterRequest(BaseModel):
 class ExerciseRequest(BaseModel):
     name: str
     group: str
+    date: date
 
 @app.post("/login")
 def login(response: Response, request: LoginRequest, db: Session = Depends(get_db)):
@@ -88,32 +96,37 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     return {"message": "User registered successfully"}
 
 @app.get("/me")
-def me(token: RequestToken = Depends(auth.access_token_required)):
-    for db in get_db():
-        user = db.execute(
-            select(UserModel).where(UserModel.id == int(token.sub))
-        ).scalars().first()
+def me(token: RequestToken = Depends(auth.access_token_required), db: Session = Depends(get_db)):
+    user = db.execute(
+        select(UserModel).where(UserModel.id == int(token.sub))
+    ).scalars().first()
 
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
 
-        return {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "exercises": [
-                {
-                    "id": e.id,
-                    "name": e.name,
-                    "group": e.group
-                }
-                for e in user.exercises
-            ]
-        }
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "exercises": [
+            {
+                "id": e.id,
+                "name": e.name,
+                "group": e.group,
+                "date": e.exercise_date.isoformat()
+            }
+            for e in user.exercises
+        ]
+    }
 
 @app.post("/exercises")
 def create_exercise(request: ExerciseRequest, db: Session = Depends(get_db), token: RequestToken = Depends(auth.access_token_required)):
-    new_exercise = ExerciseModel(name=request.name, group=request.group, user_id=int(token.sub))
+    new_exercise = ExerciseModel(
+        name=request.name,
+        group=request.group,
+        exercise_date=request.date,
+        user_id=int(token.sub)
+    )
     db.add(new_exercise)
     db.commit()
     return {"message": "Exercise created successfully"}
