@@ -21,6 +21,11 @@ class UserModel(Base):
     username: Mapped[str] = mapped_column(unique=True, nullable=False)
     email: Mapped[str] = mapped_column(unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(nullable=False)
+    weight: Mapped[float] = mapped_column(nullable=False)
+    height: Mapped[float] = mapped_column(nullable=False)
+    age: Mapped[int] = mapped_column(nullable=False)
+    birthdate: Mapped[date] = mapped_column(Date, nullable=True)
+    
 
     exercises: Mapped[list["ExerciseModel"]] = relationship(
         back_populates="user", 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Response
 from authx import AuthX, AuthXConfig, RequestToken
 from .core.database import Base, engine, get_db
-from .core.models import UserModel , ExerciseModel
+from .core.models import UserModel, ExerciseModel
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -12,20 +12,19 @@ import os
 
 config = AuthXConfig(
     JWT_ALGORITHM="HS256",
-    JWT_SECRET_KEY=os.getenv("SECRET_KEY", "SECRET_KEY"),  
+    JWT_SECRET_KEY=os.getenv("SECRET_KEY", "SECRET_KEY"),
     JWT_TOKEN_LOCATION=["cookies"],
     JWT_ACCESS_TOKEN_EXPIRES=36000000,
     JWT_ACCESS_COOKIE_NAME="access_token_cookie",
     JWT_COOKIE_SECURE=False,  # False for local development (HTTP), True for production (HTTPS)
     JWT_COOKIE_SAMESITE="lax",  # "lax" for local development, "none" for cross-origin in production (requires Secure=True)
-    JWT_COOKIE_CSRF_PROTECT=False
+    JWT_COOKIE_CSRF_PROTECT=False,
 )
 
 auth = AuthX(config=config)
 app = FastAPI(title="My API")
 Base.metadata.create_all(engine)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 
 # CORS configuration - must specify exact origins when using credentials
@@ -42,19 +41,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class LoginRequest(BaseModel):
     username: str
     password: str
+
 
 class RegisterRequest(BaseModel):
     username: str
     email: str
     password: str
+    weight: float
+    height: float
+    age: int
+    birthdate: date | None = None
+
 
 class ExerciseRequest(BaseModel):
     name: str
     group: str
     date: date
+
 
 @app.post("/login")
 def login(response: Response, request: LoginRequest, db: Session = Depends(get_db)):
@@ -63,19 +70,17 @@ def login(response: Response, request: LoginRequest, db: Session = Depends(get_d
 
     if not user:
         raise HTTPException(status_code=401, detail={"message": "Invalid credentials"})
-    
+
     password_bytes = request.password.encode("utf-8")[:72]
     is_correct_password = pwd_context.verify(password_bytes, user.hashed_password)
 
     if is_correct_password:
-        token = auth.create_access_token(uid=str(user.id))  
-        auth.set_access_cookies(
-            response=response,
-            token=token
-        )   
+        token = auth.create_access_token(uid=str(user.id))
+        auth.set_access_cookies(response=response, token=token)
         return {"access_token": token}
-    
+
     raise HTTPException(status_code=401, detail={"message": "Invalid credentials"})
+
 
 @app.post("/register")
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
@@ -90,16 +95,30 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     password_bytes = request.password.encode("utf-8")[:72]
     hashed_password = pwd_context.hash(password_bytes)
 
-    new_user = UserModel(username=request.username, hashed_password=hashed_password, email=request.email)
+    new_user = UserModel(
+        username=request.username,
+        hashed_password=hashed_password,
+        email=request.email,
+        weight=request.weight,
+        height=request.height,
+        age=request.age,
+        birthdate=request.birthdate,
+    )
     db.add(new_user)
     db.commit()
     return {"message": "User registered successfully"}
 
+
 @app.get("/me")
-def me(token: RequestToken = Depends(auth.access_token_required), db: Session = Depends(get_db)):
-    user = db.execute(
-        select(UserModel).where(UserModel.id == int(token.sub))
-    ).scalars().first()
+def me(
+    token: RequestToken = Depends(auth.access_token_required),
+    db: Session = Depends(get_db),
+):
+    user = (
+        db.execute(select(UserModel).where(UserModel.id == int(token.sub)))
+        .scalars()
+        .first()
+    )
 
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -108,25 +127,84 @@ def me(token: RequestToken = Depends(auth.access_token_required), db: Session = 
         "id": user.id,
         "username": user.username,
         "email": user.email,
+        "weight": user.weight,
+        "height": user.height,
+        "age": user.age,
+        "birthdate": user.birthdate.isoformat() if user.birthdate else None,
         "exercises": [
             {
                 "id": e.id,
                 "name": e.name,
                 "group": e.group,
-                "date": e.exercise_date.isoformat()
+                "date": e.exercise_date.isoformat(),
             }
             for e in user.exercises
-        ]
+        ],
     }
 
 @app.post("/exercises")
-def create_exercise(request: ExerciseRequest, db: Session = Depends(get_db), token: RequestToken = Depends(auth.access_token_required)):
+def create_exercise(
+    request: ExerciseRequest,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
     new_exercise = ExerciseModel(
         name=request.name,
         group=request.group,
         exercise_date=request.date,
-        user_id=int(token.sub)
+        user_id=int(token.sub),
     )
     db.add(new_exercise)
     db.commit()
     return {"message": "Exercise created successfully"}
+
+
+@app.patch("/weight_update")
+def update_weight(
+    weight: float,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    stmt = select(UserModel).where(UserModel.id == int(token.sub))
+    user = db.scalar(stmt)
+
+    if not user:
+        raise HTTPException(status_code=404, detail={"message": "User not found"})
+
+    user.weight = weight
+    db.commit()
+    return {"message": "Weight updated successfully"}
+
+
+@app.patch("/height_update")
+def update_height(
+    height: float,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    stmt = select(UserModel).where(UserModel.id == int(token.sub))
+    user = db.scalar(stmt)
+
+    if not user:
+        raise HTTPException(status_code=404, detail={"message": "User not found"})
+
+    user.height = height
+    db.commit()
+    return {"message": "Height updated successfully"}
+
+
+@app.patch("/age_update")
+def update_age(
+    age: int,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    stmt = select(UserModel).where(UserModel.id == int(token.sub))
+    user = db.scalar(stmt)
+
+    if not user:
+        raise HTTPException(status_code=404, detail={"message": "User not found"})
+
+    user.age = age
+    db.commit()
+    return {"message": "Age updated successfully"}
