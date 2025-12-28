@@ -6,6 +6,9 @@ const Register = () => {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [weight, setWeight] = useState('')
+  const [height, setHeight] = useState('')
+  const [age, setAge] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
@@ -16,7 +19,14 @@ const Register = () => {
     setLoading(true)
 
     try {
-      await api.register({ username, email, password })
+      await api.register({ 
+        username, 
+        email, 
+        password,
+        weight: parseFloat(weight) || 0,
+        height: parseFloat(height) || 0,
+        age: parseInt(age) || 0
+      })
       navigate('/login')
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.')
@@ -27,7 +37,6 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-8 relative overflow-hidden">
-      {/* Animated background */}
       <div className="absolute inset-0 opacity-20" style={{
         backgroundImage: `
           linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
@@ -101,6 +110,59 @@ const Register = () => {
               className="px-5 py-3.5 glass-effect border-2 border-pink-500/30 rounded-xl text-base text-white placeholder-gray-500 focus:border-pink-400 focus:neon-glow-pink focus:ring-4 focus:ring-pink-500/20 outline-none transition-all"
               minLength={6}
             />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="weight" className="text-pink-300 font-semibold text-sm">
+                Weight (kg)
+              </label>
+              <input
+                type="number"
+                id="weight"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                required
+                placeholder="70"
+                step="0.1"
+                min="0"
+                className="px-5 py-3.5 glass-effect border-2 border-pink-500/30 rounded-xl text-base text-white placeholder-gray-500 focus:border-pink-400 focus:neon-glow-pink focus:ring-4 focus:ring-pink-500/20 outline-none transition-all"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label htmlFor="height" className="text-pink-300 font-semibold text-sm">
+                Height (cm)
+              </label>
+              <input
+                type="number"
+                id="height"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                required
+                placeholder="175"
+                step="0.1"
+                min="0"
+                className="px-5 py-3.5 glass-effect border-2 border-pink-500/30 rounded-xl text-base text-white placeholder-gray-500 focus:border-pink-400 focus:neon-glow-pink focus:ring-4 focus:ring-pink-500/20 outline-none transition-all"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label htmlFor="age" className="text-pink-300 font-semibold text-sm">
+                Age
+              </label>
+              <input
+                type="number"
+                id="age"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                required
+                placeholder="25"
+                min="1"
+                max="120"
+                className="px-5 py-3.5 glass-effect border-2 border-pink-500/30 rounded-xl text-base text-white placeholder-gray-500 focus:border-pink-400 focus:neon-glow-pink focus:ring-4 focus:ring-pink-500/20 outline-none transition-all"
+              />
+            </div>
           </div>
 
           <button

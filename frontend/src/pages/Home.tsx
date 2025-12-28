@@ -5,9 +5,6 @@ import { api, User } from '../utils/api'
 const Home = () => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [typedText, setTypedText] = useState('')
-  const fullText = 'Inteligencia Artificial|'
-  const [showCursor, setShowCursor] = useState(true)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -15,35 +12,12 @@ const Home = () => {
         const userData = await api.getMe()
         setUser(userData)
       } catch (error) {
-        // User not authenticated
         setUser(null)
       } finally {
         setLoading(false)
       }
     }
     checkAuth()
-  }, [])
-
-  useEffect(() => {
-    let currentIndex = 0
-    const typingInterval = setInterval(() => {
-      if (currentIndex < fullText.length) {
-        setTypedText(fullText.slice(0, currentIndex + 1))
-        currentIndex++
-      } else {
-        clearInterval(typingInterval)
-      }
-    }, 100)
-
-    return () => clearInterval(typingInterval)
-  }, [])
-
-  useEffect(() => {
-    const cursorInterval = setInterval(() => {
-      setShowCursor((prev) => !prev)
-    }, 530)
-
-    return () => clearInterval(cursorInterval)
   }, [])
 
   if (loading) {
@@ -56,7 +30,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Animated background grid */}
       <div className="absolute inset-0 opacity-20" style={{
         backgroundImage: `
           linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),

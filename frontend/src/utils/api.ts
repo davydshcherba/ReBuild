@@ -1,4 +1,16 @@
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const getBaseUrl = () => {
+  const isProduction = import.meta.env.PROD || window.location.hostname !== 'localhost'
+  
+  if (isProduction) {
+    return '/api'
+  }
+  
+  const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+  const cleanUrl = baseUrl.replace(/\/$/, '')
+  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`
+}
+
+const API_BASE_URL = getBaseUrl()
 
 export interface LoginRequest {
   username: string
@@ -9,6 +21,10 @@ export interface RegisterRequest {
   username: string
   email: string
   password: string
+  weight: number
+  height: number
+  age: number
+  birthdate?: string
 }
 
 export interface User {

@@ -32,12 +32,10 @@ const Calendar = () => {
 
     const days = []
     
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null)
     }
     
-    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(new Date(year, month, day))
     }
@@ -134,7 +132,6 @@ const Calendar = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Animated background grid */}
       <div className="absolute inset-0 opacity-20" style={{
         backgroundImage: `
           linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
@@ -167,7 +164,6 @@ const Calendar = () => {
           </div>
 
           <div className="glass-effect rounded-3xl p-8 border border-purple-500/30 neon-glow mb-8">
-            {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <button
                 onClick={() => navigateMonth('prev')}
@@ -200,7 +196,6 @@ const Calendar = () => {
               </button>
             </div>
 
-            {/* Week Day Headers */}
             <div className="grid grid-cols-7 gap-2 mb-2">
               {weekDays.map(day => (
                 <div key={day} className="text-center text-sm font-semibold text-cyan-300 py-2">
@@ -209,7 +204,6 @@ const Calendar = () => {
               ))}
             </div>
 
-            {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-2">
               {days.map((date, index) => {
                 if (!date) {
@@ -259,7 +253,6 @@ const Calendar = () => {
             </div>
           </div>
 
-          {/* Selected Date Exercises */}
           {selectedDate && (
             <div className="glass-effect rounded-3xl p-8 border border-purple-500/30 neon-glow">
               <h3 className="text-3xl font-bold bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text text-transparent mb-6 text-glow">

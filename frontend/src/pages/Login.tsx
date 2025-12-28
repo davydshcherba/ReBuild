@@ -27,7 +27,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-8 relative overflow-hidden">
-      {/* Animated background */}
       <div className="absolute inset-0 opacity-20" style={{
         backgroundImage: `
           linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
