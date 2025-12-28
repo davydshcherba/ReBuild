@@ -188,6 +188,50 @@ def create_exercise(
     db.commit()
     return {"message": "Exercise created successfully"}
 
+@router.get("/exercises/{exercise_id}")
+def get_exercise(
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    stmt = select(ExerciseModel).where(
+        ExerciseModel.id == exercise_id,
+        ExerciseModel.user_id == int(token.sub)
+    )
+    exercise = db.scalar(stmt)
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail={"message": "Exercise not found"})
+
+    return {
+        "id": exercise.id,
+        "name": exercise.name,
+        "group": exercise.group,
+        "date": exercise.exercise_date.isoformat(),
+    }
+
+@router.delete("/exercises/{exercise_id}")
+def delete_exercise(
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    stmt = select(ExerciseModel).where(
+        ExerciseModel.id == exercise_id,
+        ExerciseModel.user_id == int(token.sub)
+    )
+    exercise = db.scalar(stmt)
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail={"message": "Exercise not found"})
+
+    db.delete(exercise)
+    db.commit()
+    return {"message": "Exercise deleted successfully"}
+
+
+
+
 
 @router.patch("/weight_update")
 def update_weight(
