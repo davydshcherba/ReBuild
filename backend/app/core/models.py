@@ -1,6 +1,7 @@
 from .database import Base 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Date
+from datetime import date
 
 
 class ExerciseModel(Base):
@@ -8,6 +9,7 @@ class ExerciseModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
     group: Mapped[str] = mapped_column(nullable=False)
+    exercise_date: Mapped[date] = mapped_column(Date, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     user: Mapped["UserModel"] = relationship(back_populates="exercises")
@@ -19,6 +21,11 @@ class UserModel(Base):
     username: Mapped[str] = mapped_column(unique=True, nullable=False)
     email: Mapped[str] = mapped_column(unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(nullable=False)
+    weight: Mapped[float] = mapped_column(nullable=False)
+    height: Mapped[float] = mapped_column(nullable=False)
+    age: Mapped[int] = mapped_column(nullable=False)
+    birthdate: Mapped[date] = mapped_column(Date, nullable=True)
+    
 
     exercises: Mapped[list["ExerciseModel"]] = relationship(
         back_populates="user", 
