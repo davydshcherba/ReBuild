@@ -49,6 +49,9 @@ const Home = () => {
                 <Link to="/calendar" className="text-cyan-300 px-4 py-2 rounded-lg glass-effect hover:neon-glow-cyan transition-all border border-cyan-500/30">
                   Calendar
                 </Link>
+                <Link to="/statistics" className="text-purple-300 px-4 py-2 rounded-lg glass-effect hover:neon-glow transition-all border border-purple-500/30">
+                  Statistics
+                </Link>
                 <span className="text-purple-300 text-sm font-medium">Hello, {user.username}!</span>
                 <Link to="/logout" className="text-pink-300 px-4 py-2 rounded-lg glass-effect hover:neon-glow-pink transition-all border border-pink-500/30">
                   Logout

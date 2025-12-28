@@ -45,6 +45,20 @@ export interface ExerciseRequest {
   date: string
 }
 
+export interface StatsTotal {
+  total: number
+}
+
+export interface StatsPerDay {
+  date: string
+  count: number
+}
+
+export interface StatsPerGroup {
+  group: string
+  count: number
+}
+
 export const api = {
   async login(data: LoginRequest) {
     const response = await fetch(`${API_BASE_URL}/login`, {
@@ -112,6 +126,45 @@ export const api = {
     if (!response.ok) {
       const error = await response.json()
       throw new Error(error.detail?.message || 'Failed to create exercise')
+    }
+    
+    return response.json()
+  },
+
+  async getStatsTotal(): Promise<StatsTotal> {
+    const response = await fetch(`${API_BASE_URL}/stats/total_exercises`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch total exercises')
+    }
+    
+    return response.json()
+  },
+
+  async getStatsPerDay(): Promise<StatsPerDay[]> {
+    const response = await fetch(`${API_BASE_URL}/stats/exercises_per_day`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch exercises per day')
+    }
+    
+    return response.json()
+  },
+
+  async getStatsPerGroup(): Promise<StatsPerGroup[]> {
+    const response = await fetch(`${API_BASE_URL}/stats/exercises_per_group`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch exercises per group')
     }
     
     return response.json()

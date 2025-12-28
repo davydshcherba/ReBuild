@@ -6,11 +6,11 @@ from authx.exceptions import MissingTokenError, InvalidToken
 from .core.database import Base, engine, get_db
 from .core.models import UserModel, ExerciseModel
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, timedelta
 import os
 
 config = AuthXConfig(
@@ -282,6 +282,47 @@ def update_age(
     user.age = age
     db.commit()
     return {"message": "Age updated successfully"}
+
+
+@router.get("/stats/total_exercises")
+def get_total_exercises(
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    user_id = int(token.sub)
+    result = db.scalar(select(func.count(ExerciseModel.id)).where(ExerciseModel.user_id == user_id))
+    return {"total": result}
+
+
+@router.get("/stats/exercises_per_day")
+def get_exercises_per_day(
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    user_id = int(token.sub)
+    # Get last 30 days
+    thirty_days_ago = date.today() - timedelta(days=30)
+    result = db.execute(
+        select(func.date(ExerciseModel.exercise_date), func.count(ExerciseModel.id))
+        .where(ExerciseModel.user_id == user_id, ExerciseModel.exercise_date >= thirty_days_ago)
+        .group_by(func.date(ExerciseModel.exercise_date))
+        .order_by(func.date(ExerciseModel.exercise_date))
+    ).all()
+    return [{"date": str(d), "count": count} for d, count in result]
+
+
+@router.get("/stats/exercises_per_group")
+def get_exercises_per_group(
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    user_id = int(token.sub)
+    result = db.execute(
+        select(ExerciseModel.group, func.count(ExerciseModel.id))
+        .where(ExerciseModel.user_id == user_id)
+        .group_by(ExerciseModel.group)
+    ).all()
+    return [{"group": group, "count": count} for group, count in result]
 
 
 @app.exception_handler(MissingTokenError)

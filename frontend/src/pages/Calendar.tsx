@@ -149,6 +149,9 @@ const Calendar = () => {
             <Link to="/" className="text-cyan-300 px-4 py-2 rounded-lg glass-effect hover:neon-glow-cyan transition-all border border-cyan-500/30">
               Home
             </Link>
+            <Link to="/statistics" className="text-purple-300 px-4 py-2 rounded-lg glass-effect hover:neon-glow transition-all border border-purple-500/30">
+              Statistics
+            </Link>
             <span className="text-purple-300 text-sm font-medium">Hello, {user.username}!</span>
           </nav>
         </div>
