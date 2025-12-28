@@ -110,6 +110,21 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     password_bytes = request.password.encode("utf-8")[:72]
     hashed_password = pwd_context.hash(password_bytes)
 
+    if request.weight <= 0 or request.height <= 0 or request.age <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "Weight, height, and age must be positive values"},
+        )
+    if request.birthdate and request.birthdate > date.today():
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "Birthdate cannot be in the future"},
+        )
+    if request.age < 13:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "You must be at least 13 years old to register"},
+        )
     new_user = UserModel(
         username=request.username,
         hashed_password=hashed_password,
