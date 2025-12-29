@@ -3,6 +3,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Calendar from './pages/Calendar'
+import Statistics from './pages/Statistics'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/calendar" element={<Calendar />} />
+        <Route path="/statistics" element={<Statistics />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

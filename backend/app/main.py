@@ -6,18 +6,18 @@ from authx.exceptions import MissingTokenError, InvalidToken
 from .core.database import Base, engine, get_db
 from .core.models import UserModel, ExerciseModel
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, timedelta
 import os
 
 config = AuthXConfig(
     JWT_ALGORITHM="HS256",
     JWT_SECRET_KEY=os.getenv("SECRET_KEY", "SECRET_KEY"),
     JWT_TOKEN_LOCATION=["cookies"],
-    JWT_ACCESS_TOKEN_EXPIRES=36000000,
+    JWT_ACCESS_TOKEN_EXPIRES=3600,
     JWT_ACCESS_COOKIE_NAME="access_token_cookie",
     JWT_COOKIE_SECURE=False,
     JWT_COOKIE_SAMESITE="lax",
@@ -37,6 +37,7 @@ allowed_origins = [
     "http://127.0.0.1:3000",
     "http://0.0.0.0:3000",
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
@@ -110,6 +111,21 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     password_bytes = request.password.encode("utf-8")[:72]
     hashed_password = pwd_context.hash(password_bytes)
 
+    if request.weight <= 0 or request.height <= 0 or request.age <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "Weight, height, and age must be positive values"},
+        )
+    if request.birthdate and request.birthdate > date.today():
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "Birthdate cannot be in the future"},
+        )
+    if request.age < 13:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "You must be at least 13 years old to register"},
+        )
     new_user = UserModel(
         username=request.username,
         hashed_password=hashed_password,
@@ -174,6 +190,69 @@ def create_exercise(
     return {"message": "Exercise created successfully"}
 
 
+@router.patch("/exercises/{exercise_id}")
+def update_exercise(
+    exercise_id: int,
+    is_completed: bool,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    stmt = select(ExerciseModel).where(ExerciseModel.id == exercise_id, ExerciseModel.user_id == int(token.sub))
+    exercise = db.scalar(stmt)
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail={"message": "Exercise not found"})
+
+    exercise.is_completed = is_completed
+    db.commit()
+    return {"message": "Exercise updated successfully"}
+
+
+@router.get("/exercises/{exercise_id}")
+def get_exercise(
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    stmt = select(ExerciseModel).where(
+        ExerciseModel.id == exercise_id,
+        ExerciseModel.user_id == int(token.sub)
+    )
+    exercise = db.scalar(stmt)
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail={"message": "Exercise not found"})
+
+    return {
+        "id": exercise.id,
+        "name": exercise.name,
+        "group": exercise.group,
+        "date": exercise.exercise_date.isoformat(),
+    }
+
+@router.delete("/exercises/{exercise_id}")
+def delete_exercise(
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    stmt = select(ExerciseModel).where(
+        ExerciseModel.id == exercise_id,
+        ExerciseModel.user_id == int(token.sub)
+    )
+    exercise = db.scalar(stmt)
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail={"message": "Exercise not found"})
+
+    db.delete(exercise)
+    db.commit()
+    return {"message": "Exercise deleted successfully"}
+
+
+
+
+
 @router.patch("/weight_update")
 def update_weight(
     weight: float,
@@ -223,6 +302,47 @@ def update_age(
     user.age = age
     db.commit()
     return {"message": "Age updated successfully"}
+
+
+@router.get("/stats/total_exercises")
+def get_total_exercises(
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    user_id = int(token.sub)
+    result = db.scalar(select(func.count(ExerciseModel.id)).where(ExerciseModel.user_id == user_id))
+    return {"total": result}
+
+
+@router.get("/stats/exercises_per_day")
+def get_exercises_per_day(
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    user_id = int(token.sub)
+    # Get last 30 days
+    thirty_days_ago = date.today() - timedelta(days=30)
+    result = db.execute(
+        select(func.date(ExerciseModel.exercise_date), func.count(ExerciseModel.id))
+        .where(ExerciseModel.user_id == user_id, ExerciseModel.exercise_date >= thirty_days_ago)
+        .group_by(func.date(ExerciseModel.exercise_date))
+        .order_by(func.date(ExerciseModel.exercise_date))
+    ).all()
+    return [{"date": str(d), "count": count} for d, count in result]
+
+
+@router.get("/stats/exercises_per_group")
+def get_exercises_per_group(
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    user_id = int(token.sub)
+    result = db.execute(
+        select(ExerciseModel.group, func.count(ExerciseModel.id))
+        .where(ExerciseModel.user_id == user_id)
+        .group_by(ExerciseModel.group)
+    ).all()
+    return [{"group": group, "count": count} for group, count in result]
 
 
 @app.exception_handler(MissingTokenError)
