@@ -38,6 +38,7 @@ allowed_origins = [
     "http://0.0.0.0:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://rebuild-production.up.railway.app/",
 ]
 
 app.add_middleware(
