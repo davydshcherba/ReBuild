@@ -36,6 +36,7 @@ export interface User {
     name: string
     group: string
     date: string
+    is_completed: boolean
   }>
 }
 
@@ -126,6 +127,24 @@ export const api = {
     if (!response.ok) {
       const error = await response.json()
       throw new Error(error.detail?.message || 'Failed to create exercise')
+    }
+    
+    return response.json()
+  },
+
+  async updateExercise(exerciseId: number, isCompleted: boolean) {
+    const response = await fetch(`${API_BASE_URL}/exercises/${exerciseId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ is_completed: isCompleted }),
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail?.message || 'Failed to update exercise')
     }
     
     return response.json()

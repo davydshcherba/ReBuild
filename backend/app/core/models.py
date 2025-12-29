@@ -10,6 +10,7 @@ class ExerciseModel(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     group: Mapped[str] = mapped_column(nullable=False)
     exercise_date: Mapped[date] = mapped_column(Date, nullable=False)
+    is_completed: Mapped[bool] = mapped_column(default=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     user: Mapped["UserModel"] = relationship(back_populates="exercises")

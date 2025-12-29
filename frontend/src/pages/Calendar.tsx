@@ -79,6 +79,17 @@ const Calendar = () => {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   }
 
+  const handleToggleComplete = async (exerciseId: number, currentCompleted: boolean) => {
+    try {
+      await api.updateExercise(exerciseId, !currentCompleted)
+      // Refresh user data
+      const userData = await api.getMe()
+      setUser(userData)
+    } catch (error) {
+      console.error('Failed to update exercise:', error)
+    }
+  }
+
   const isToday = (date: Date | null) => {
     if (!date) return false
     const today = new Date()
@@ -272,13 +283,29 @@ const Calendar = () => {
                   {selectedExercises.map(exercise => (
                     <div
                       key={exercise.id}
-                      className="glass-effect border-2 border-cyan-500/30 rounded-2xl p-6 hover:border-cyan-400 hover:neon-glow-cyan transition-all cursor-pointer"
+                      className={`glass-effect border-2 rounded-2xl p-6 hover:-translate-y-1 transition-all cursor-pointer ${
+                        exercise.is_completed
+                          ? 'border-green-500/50 hover:border-green-400 neon-glow-green'
+                          : 'border-cyan-500/30 hover:border-cyan-400 hover:neon-glow-cyan'
+                      }`}
                     >
                       <div className="flex flex-col gap-3">
-                        <h4 className="text-xl font-semibold text-cyan-200">{exercise.name}</h4>
+                        <h4 className={`text-xl font-semibold ${exercise.is_completed ? 'text-green-200' : 'text-cyan-200'}`}>
+                          {exercise.name}
+                        </h4>
                         <span className="inline-block px-3.5 py-1.5 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white rounded-full text-sm font-medium w-fit neon-glow">
                           {exercise.group}
                         </span>
+                        <button
+                          onClick={() => handleToggleComplete(exercise.id, exercise.is_completed)}
+                          className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                            exercise.is_completed
+                              ? 'bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30'
+                              : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30'
+                          }`}
+                        >
+                          {exercise.is_completed ? '✓ Completed' : 'Mark Complete'}
+                        </button>
                       </div>
                     </div>
                   ))}

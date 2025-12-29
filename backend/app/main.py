@@ -17,7 +17,7 @@ config = AuthXConfig(
     JWT_ALGORITHM="HS256",
     JWT_SECRET_KEY=os.getenv("SECRET_KEY", "SECRET_KEY"),
     JWT_TOKEN_LOCATION=["cookies"],
-    JWT_ACCESS_TOKEN_EXPIRES=36000000,
+    JWT_ACCESS_TOKEN_EXPIRES=3600,
     JWT_ACCESS_COOKIE_NAME="access_token_cookie",
     JWT_COOKIE_SECURE=False,
     JWT_COOKIE_SAMESITE="lax",
@@ -37,6 +37,7 @@ allowed_origins = [
     "http://127.0.0.1:3000",
     "http://0.0.0.0:3000",
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
@@ -187,6 +188,25 @@ def create_exercise(
     db.add(new_exercise)
     db.commit()
     return {"message": "Exercise created successfully"}
+
+
+@router.patch("/exercises/{exercise_id}")
+def update_exercise(
+    exercise_id: int,
+    is_completed: bool,
+    db: Session = Depends(get_db),
+    token: RequestToken = Depends(auth.access_token_required),
+):
+    stmt = select(ExerciseModel).where(ExerciseModel.id == exercise_id, ExerciseModel.user_id == int(token.sub))
+    exercise = db.scalar(stmt)
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail={"message": "Exercise not found"})
+
+    exercise.is_completed = is_completed
+    db.commit()
+    return {"message": "Exercise updated successfully"}
+
 
 @router.get("/exercises/{exercise_id}")
 def get_exercise(
